@@ -37,6 +37,9 @@ func main() {
 		fmt.Println("API call failed:", err)
 	}
 
+	bpm, stepLen := BPMEstimateSimple(1.75, 2.68224)
+	fmt.Printf("Estimated cadence: %.0f spm (step length: %.2f m)\n", bpm, stepLen)
+
 }
 
 func getAccessToken(ctx context.Context, clientID, clientSecret string) (string, int, error) {
@@ -78,7 +81,7 @@ func getAccessToken(ctx context.Context, clientID, clientSecret string) (string,
 	return payload.AccessToken, payload.ExpiresIn, nil
 }
 
-// callSpotifySearchParsed runs a typed search and prints "Artist — Track" lines.
+// token = Access token, term = seach term, limit = # of results
 func callSpotifySearchParsed(ctx context.Context, token, term string, limit int) error {
 	type artist struct {
 		Name string `json:"name"`
@@ -94,6 +97,7 @@ func callSpotifySearchParsed(ctx context.Context, token, term string, limit int)
 		Tracks tracksPage `json:"tracks"`
 	}
 
+	//build the URL for the endpoint
 	baseURL := "https://api.spotify.com/v1/search"
 	q := url.Values{}
 	q.Set("q", term)
@@ -136,4 +140,28 @@ func callSpotifySearchParsed(ctx context.Context, token, term string, limit int)
 		fmt.Printf("%2d) %s — %s\n", i+1, artist, t.Name)
 	}
 	return nil
+}
+
+// Function to estimate the BPM or steps per minute.
+func BPMEstimateSimple(height, speed float64) (float64, float64) {
+	L := 0.414 * height //Stride length
+
+	//Account for longer steps when running faster, around ~5mph or ~2.2m/s
+	if speed > 2.2 {
+		scale := 1.0 + 0.25*((speed-2.2)/1.8)
+		if scale > 1.25 {
+			scale = 1.25
+		}
+		L = L * scale
+	}
+
+	//cap the stride length to 55% of height
+	maxL := 0.55 * height
+	if L > maxL {
+		L = maxL
+	}
+
+	//calculate BPM
+	bpm := (speed / L) * 60.0
+	return bpm, L
 }
