@@ -37,9 +37,6 @@ func main() {
 		fmt.Println("API call failed:", err)
 	}
 
-	bpm, stepLen := BPMEstimateSimple(1.75, 2.68224)
-	fmt.Printf("Estimated cadence: %.0f spm (step length: %.2f m)\n", bpm, stepLen)
-
 }
 
 func getAccessToken(ctx context.Context, clientID, clientSecret string) (string, int, error) {
@@ -165,3 +162,7 @@ func BPMEstimateSimple(height, speed float64) (float64, float64) {
 	bpm := (speed / L) * 60.0
 	return bpm, L
 }
+
+//getReccomendations: This function will take in the token, bpm, limit(# of recommendations)
+// optional parameters: genre, artists, duration/time of the track.
+// There's also target_energy, target_danceability, target_valence in the API look more into it.
